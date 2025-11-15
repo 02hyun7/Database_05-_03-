@@ -1,0 +1,315 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+-- 슈퍼베이스에서는 캡쳐가 전체가 되지 않아서 다른 방법을 찾아보겠습니다.
+
+CREATE TABLE public.age_rating (
+  age_rating_id bigint NOT NULL DEFAULT nextval('age_rating_age_rating_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  label character varying NOT NULL,
+  CONSTRAINT age_rating_pkey PRIMARY KEY (age_rating_id)
+);
+CREATE TABLE public.audit_log (
+  log_id bigint NOT NULL DEFAULT nextval('audit_log_log_id_seq'::regclass),
+  actor_type character varying NOT NULL,
+  actor_id bigint,
+  action character varying NOT NULL,
+  target_table character varying NOT NULL,
+  target_id bigint,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  detail jsonb,
+  CONSTRAINT audit_log_pkey PRIMARY KEY (log_id)
+);
+CREATE TABLE public.booking (
+  booking_id bigint NOT NULL DEFAULT nextval('booking_booking_id_seq'::regclass),
+  member_id bigint NOT NULL,
+  show_id bigint NOT NULL,
+  status character varying NOT NULL DEFAULT 'PENDING'::character varying,
+  total_amount numeric NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT booking_pkey PRIMARY KEY (booking_id),
+  CONSTRAINT booking_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.member(member_id),
+  CONSTRAINT booking_show_id_fkey FOREIGN KEY (show_id) REFERENCES public.showtime(show_id)
+);
+CREATE TABLE public.booking_seat (
+  booking_id bigint NOT NULL,
+  seat_id bigint NOT NULL,
+  show_id bigint NOT NULL,
+  price numeric NOT NULL,
+  CONSTRAINT booking_seat_pkey PRIMARY KEY (booking_id, seat_id),
+  CONSTRAINT booking_seat_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.booking(booking_id),
+  CONSTRAINT booking_seat_seat_id_fkey FOREIGN KEY (seat_id) REFERENCES public.seat(seat_id),
+  CONSTRAINT booking_seat_show_id_fkey FOREIGN KEY (show_id) REFERENCES public.showtime(show_id)
+);
+CREATE TABLE public.city_region (
+  city_region_id bigint NOT NULL DEFAULT nextval('city_region_city_region_id_seq'::regclass),
+  city character varying NOT NULL,
+  district character varying NOT NULL,
+  CONSTRAINT city_region_pkey PRIMARY KEY (city_region_id)
+);
+CREATE TABLE public.coupon (
+  coupon_id bigint NOT NULL DEFAULT nextval('coupon_coupon_id_seq'::regclass),
+  promotion_id bigint,
+  code character varying NOT NULL UNIQUE,
+  max_uses integer NOT NULL DEFAULT 1 CHECK (max_uses > 0),
+  remaining integer NOT NULL DEFAULT 1 CHECK (remaining >= 0),
+  discount_type character varying NOT NULL CHECK (discount_type::text = ANY (ARRAY['FIX'::character varying, 'PCT'::character varying]::text[])),
+  discount_value numeric NOT NULL CHECK (discount_value >= 0::numeric),
+  valid_from timestamp with time zone,
+  valid_to timestamp with time zone,
+  CONSTRAINT coupon_pkey PRIMARY KEY (coupon_id),
+  CONSTRAINT coupon_promotion_id_fkey FOREIGN KEY (promotion_id) REFERENCES public.promotion(promotion_id)
+);
+CREATE TABLE public.coupon_redeem (
+  redeem_id bigint NOT NULL DEFAULT nextval('coupon_redeem_redeem_id_seq'::regclass),
+  coupon_id bigint NOT NULL,
+  booking_id bigint NOT NULL,
+  redeemed_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT coupon_redeem_pkey PRIMARY KEY (redeem_id),
+  CONSTRAINT coupon_redeem_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.booking(booking_id),
+  CONSTRAINT coupon_redeem_coupon_id_fkey FOREIGN KEY (coupon_id) REFERENCES public.coupon(coupon_id)
+);
+CREATE TABLE public.distributor (
+  distributor_id bigint NOT NULL DEFAULT nextval('distributor_distributor_id_seq'::regclass),
+  name character varying NOT NULL UNIQUE,
+  CONSTRAINT distributor_pkey PRIMARY KEY (distributor_id)
+);
+CREATE TABLE public.hold_seat (
+  hold_id bigint NOT NULL DEFAULT nextval('hold_seat_hold_id_seq'::regclass),
+  show_id bigint NOT NULL,
+  seat_id bigint NOT NULL,
+  member_id bigint NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  CONSTRAINT hold_seat_pkey PRIMARY KEY (hold_id),
+  CONSTRAINT hold_seat_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.member(member_id),
+  CONSTRAINT hold_seat_seat_id_fkey FOREIGN KEY (seat_id) REFERENCES public.seat(seat_id),
+  CONSTRAINT hold_seat_show_id_fkey FOREIGN KEY (show_id) REFERENCES public.showtime(show_id)
+);
+CREATE TABLE public.language (
+  language_id bigint NOT NULL DEFAULT nextval('language_language_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  label character varying NOT NULL,
+  CONSTRAINT language_pkey PRIMARY KEY (language_id)
+);
+CREATE TABLE public.maintenance_ticket (
+  ticket_id bigint NOT NULL DEFAULT nextval('maintenance_ticket_ticket_id_seq'::regclass),
+  seat_id bigint NOT NULL,
+  opened_at timestamp with time zone NOT NULL DEFAULT now(),
+  closed_at timestamp with time zone,
+  status character varying NOT NULL DEFAULT 'OPEN'::character varying,
+  CONSTRAINT maintenance_ticket_pkey PRIMARY KEY (ticket_id),
+  CONSTRAINT maintenance_ticket_seat_id_fkey FOREIGN KEY (seat_id) REFERENCES public.seat(seat_id)
+);
+CREATE TABLE public.member (
+  member_id bigint NOT NULL DEFAULT nextval('member_member_id_seq'::regclass),
+  email character varying NOT NULL UNIQUE,
+  name character varying NOT NULL,
+  tier_id bigint,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT member_pkey PRIMARY KEY (member_id),
+  CONSTRAINT member_tier_id_fkey FOREIGN KEY (tier_id) REFERENCES public.member_tier(tier_id)
+);
+CREATE TABLE public.member_tier (
+  tier_id bigint NOT NULL DEFAULT nextval('member_tier_tier_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  min_spend numeric NOT NULL DEFAULT 0,
+  CONSTRAINT member_tier_pkey PRIMARY KEY (tier_id)
+);
+CREATE TABLE public.movie (
+  movie_id bigint NOT NULL DEFAULT nextval('movie_movie_id_seq'::regclass),
+  title character varying NOT NULL,
+  duration_min integer NOT NULL CHECK (duration_min > 0),
+  released_on date,
+  age_rating_id bigint,
+  distributor_id bigint,
+  CONSTRAINT movie_pkey PRIMARY KEY (movie_id),
+  CONSTRAINT movie_age_rating_id_fkey FOREIGN KEY (age_rating_id) REFERENCES public.age_rating(age_rating_id),
+  CONSTRAINT movie_distributor_id_fkey FOREIGN KEY (distributor_id) REFERENCES public.distributor(distributor_id)
+);
+CREATE TABLE public.movie_version (
+  version_id bigint NOT NULL DEFAULT nextval('movie_version_version_id_seq'::regclass),
+  movie_id bigint NOT NULL,
+  format character varying NOT NULL,
+  audio_lang_id bigint NOT NULL,
+  subtitle_id bigint NOT NULL,
+  CONSTRAINT movie_version_pkey PRIMARY KEY (version_id),
+  CONSTRAINT movie_version_subtitle_id_fkey FOREIGN KEY (subtitle_id) REFERENCES public.subtitle(subtitle_id),
+  CONSTRAINT movie_version_audio_lang_id_fkey FOREIGN KEY (audio_lang_id) REFERENCES public.language(language_id),
+  CONSTRAINT movie_version_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES public.movie(movie_id)
+);
+CREATE TABLE public.notification (
+  notification_id bigint NOT NULL DEFAULT nextval('notification_notification_id_seq'::regclass),
+  member_id bigint NOT NULL,
+  title character varying NOT NULL,
+  body text,
+  sent_at timestamp with time zone,
+  channel character varying,
+  CONSTRAINT notification_pkey PRIMARY KEY (notification_id),
+  CONSTRAINT notification_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.member(member_id)
+);
+CREATE TABLE public.payment (
+  payment_id bigint NOT NULL DEFAULT nextval('payment_payment_id_seq'::regclass),
+  booking_id bigint NOT NULL,
+  method_id bigint NOT NULL,
+  amount numeric NOT NULL CHECK (amount >= 0::numeric),
+  status character varying NOT NULL,
+  approved_at timestamp with time zone,
+  CONSTRAINT payment_pkey PRIMARY KEY (payment_id),
+  CONSTRAINT payment_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.booking(booking_id),
+  CONSTRAINT payment_method_id_fkey FOREIGN KEY (method_id) REFERENCES public.payment_method(method_id)
+);
+CREATE TABLE public.payment_method (
+  method_id bigint NOT NULL DEFAULT nextval('payment_method_method_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  label character varying NOT NULL,
+  CONSTRAINT payment_method_pkey PRIMARY KEY (method_id)
+);
+CREATE TABLE public.price (
+  price_id bigint NOT NULL DEFAULT nextval('price_price_id_seq'::regclass),
+  show_id bigint NOT NULL,
+  seat_type_id bigint NOT NULL,
+  default_price numeric NOT NULL,
+  changed_price numeric,
+  rule_apply_id bigint,
+  CONSTRAINT price_pkey PRIMARY KEY (price_id),
+  CONSTRAINT price_rule_apply_id_fkey FOREIGN KEY (rule_apply_id) REFERENCES public.price_rule_applies(rule_apply_id),
+  CONSTRAINT price_seat_type_id_fkey FOREIGN KEY (seat_type_id) REFERENCES public.seat_type(seat_type_id),
+  CONSTRAINT price_show_id_fkey FOREIGN KEY (show_id) REFERENCES public.showtime(show_id)
+);
+CREATE TABLE public.price_rule (
+  rule_id bigint NOT NULL DEFAULT nextval('price_rule_rule_id_seq'::regclass),
+  name character varying NOT NULL,
+  rule_type character varying NOT NULL,
+  priority integer NOT NULL DEFAULT 100,
+  amount_type character varying NOT NULL CHECK (amount_type::text = ANY (ARRAY['FIX'::character varying, 'PCT'::character varying]::text[])),
+  amount_value numeric NOT NULL,
+  active_from timestamp with time zone,
+  active_to timestamp with time zone,
+  CONSTRAINT price_rule_pkey PRIMARY KEY (rule_id)
+);
+CREATE TABLE public.price_rule_applies (
+  rule_apply_id bigint NOT NULL DEFAULT nextval('price_rule_applies_rule_apply_id_seq'::regclass),
+  rule_id bigint NOT NULL,
+  theater_id bigint,
+  screen_id bigint,
+  seat_type_id bigint,
+  day_of_week integer,
+  time_from time without time zone,
+  time_to time without time zone,
+  CONSTRAINT price_rule_applies_pkey PRIMARY KEY (rule_apply_id),
+  CONSTRAINT price_rule_applies_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES public.price_rule(rule_id),
+  CONSTRAINT price_rule_applies_screen_id_fkey FOREIGN KEY (screen_id) REFERENCES public.screen(screen_id),
+  CONSTRAINT price_rule_applies_seat_type_id_fkey FOREIGN KEY (seat_type_id) REFERENCES public.seat_type(seat_type_id),
+  CONSTRAINT price_rule_applies_theater_id_fkey FOREIGN KEY (theater_id) REFERENCES public.theater(theater_id)
+);
+CREATE TABLE public.promotion (
+  promotion_id bigint NOT NULL DEFAULT nextval('promotion_promotion_id_seq'::regclass),
+  name character varying NOT NULL,
+  description text,
+  active_from timestamp with time zone,
+  active_to timestamp with time zone,
+  CONSTRAINT promotion_pkey PRIMARY KEY (promotion_id)
+);
+CREATE TABLE public.refund (
+  refund_id bigint NOT NULL DEFAULT nextval('refund_refund_id_seq'::regclass),
+  booking_id bigint NOT NULL,
+  payment_id bigint,
+  amount numeric NOT NULL CHECK (amount >= 0::numeric),
+  reason character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT refund_pkey PRIMARY KEY (refund_id),
+  CONSTRAINT refund_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.booking(booking_id),
+  CONSTRAINT refund_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES public.payment(payment_id)
+);
+CREATE TABLE public.review (
+  review_id bigint NOT NULL DEFAULT nextval('review_review_id_seq'::regclass),
+  member_id bigint NOT NULL,
+  movie_id bigint NOT NULL,
+  rating integer NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  content text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT review_pkey PRIMARY KEY (review_id),
+  CONSTRAINT review_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.member(member_id),
+  CONSTRAINT review_movie_id_fkey FOREIGN KEY (movie_id) REFERENCES public.movie(movie_id)
+);
+CREATE TABLE public.screen (
+  screen_id bigint NOT NULL DEFAULT nextval('screen_screen_id_seq'::regclass),
+  theater_id bigint NOT NULL,
+  name character varying NOT NULL,
+  layout_version integer NOT NULL DEFAULT 1,
+  CONSTRAINT screen_pkey PRIMARY KEY (screen_id),
+  CONSTRAINT screen_theater_id_fkey FOREIGN KEY (theater_id) REFERENCES public.theater(theater_id)
+);
+CREATE TABLE public.screen_layout (
+  layout_id bigint NOT NULL DEFAULT nextval('screen_layout_layout_id_seq'::regclass),
+  screen_id bigint NOT NULL,
+  version integer NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT screen_layout_pkey PRIMARY KEY (layout_id),
+  CONSTRAINT screen_layout_screen_id_fkey FOREIGN KEY (screen_id) REFERENCES public.screen(screen_id)
+);
+CREATE TABLE public.seat (
+  seat_id bigint NOT NULL DEFAULT nextval('seat_seat_id_seq'::regclass),
+  layout_id bigint NOT NULL,
+  row_label character varying NOT NULL,
+  col_number integer NOT NULL CHECK (col_number > 0),
+  seat_type_id bigint NOT NULL,
+  CONSTRAINT seat_pkey PRIMARY KEY (seat_id),
+  CONSTRAINT seat_layout_id_fkey FOREIGN KEY (layout_id) REFERENCES public.screen_layout(layout_id),
+  CONSTRAINT seat_seat_type_id_fkey FOREIGN KEY (seat_type_id) REFERENCES public.seat_type(seat_type_id)
+);
+CREATE TABLE public.seat_type (
+  seat_type_id bigint NOT NULL DEFAULT nextval('seat_type_seat_type_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  label character varying NOT NULL,
+  price_delta numeric NOT NULL DEFAULT 0,
+  CONSTRAINT seat_type_pkey PRIMARY KEY (seat_type_id)
+);
+CREATE TABLE public.show_status (
+  show_status_id bigint NOT NULL DEFAULT nextval('show_status_show_status_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  label character varying NOT NULL,
+  CONSTRAINT show_status_pkey PRIMARY KEY (show_status_id)
+);
+CREATE TABLE public.showtime (
+  show_id bigint NOT NULL DEFAULT nextval('showtime_show_id_seq'::regclass),
+  screen_id bigint NOT NULL,
+  version_id bigint NOT NULL,
+  starts_at timestamp with time zone NOT NULL,
+  ends_at timestamp with time zone NOT NULL,
+  show_status_id bigint NOT NULL,
+  CONSTRAINT showtime_pkey PRIMARY KEY (show_id),
+  CONSTRAINT showtime_screen_id_fkey FOREIGN KEY (screen_id) REFERENCES public.screen(screen_id),
+  CONSTRAINT showtime_show_status_id_fkey FOREIGN KEY (show_status_id) REFERENCES public.show_status(show_status_id),
+  CONSTRAINT showtime_version_id_fkey FOREIGN KEY (version_id) REFERENCES public.movie_version(version_id)
+);
+CREATE TABLE public.subtitle (
+  subtitle_id bigint NOT NULL DEFAULT nextval('subtitle_subtitle_id_seq'::regclass),
+  code character varying NOT NULL UNIQUE,
+  label character varying NOT NULL,
+  CONSTRAINT subtitle_pkey PRIMARY KEY (subtitle_id)
+);
+CREATE TABLE public.tax (
+  tax_id bigint NOT NULL DEFAULT nextval('tax_tax_id_seq'::regclass),
+  name character varying NOT NULL,
+  rate_pct numeric NOT NULL CHECK (rate_pct >= 0::numeric),
+  effective_from timestamp with time zone,
+  effective_to timestamp with time zone,
+  CONSTRAINT tax_pkey PRIMARY KEY (tax_id)
+);
+CREATE TABLE public.theater (
+  theater_id bigint NOT NULL DEFAULT nextval('theater_theater_id_seq'::regclass),
+  city_region_id bigint NOT NULL,
+  name character varying NOT NULL,
+  address character varying,
+  CONSTRAINT theater_pkey PRIMARY KEY (theater_id),
+  CONSTRAINT theater_city_region_id_fkey FOREIGN KEY (city_region_id) REFERENCES public.city_region(city_region_id)
+);
+CREATE TABLE public.ticket (
+  ticket_id bigint NOT NULL DEFAULT nextval('ticket_ticket_id_seq'::regclass),
+  booking_id bigint NOT NULL,
+  issued_at timestamp with time zone NOT NULL DEFAULT now(),
+  qr_code character varying,
+  CONSTRAINT ticket_pkey PRIMARY KEY (ticket_id),
+  CONSTRAINT ticket_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.booking(booking_id)
+);
