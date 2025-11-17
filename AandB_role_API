@@ -1,0 +1,57 @@
+**A는 조회 중심**
+
+A가 맡는 테이블
+
+`movie`
+`movie_version`
+`theater`
+`screen`
+`seat`
+`showtime`
+`price` (조회만)
+
+A가 구현해야 할 기능 (API)
+1. 영화 조회
+2. 영화관/상영관 조회
+3. 상영시간 조회
+4. 좌석 조회 (핵심, but 조회 전용)
+※ 여기서 좌석 상태 계산(예약됨/홀드중/가능)은 A의 로직
+(hold_seat + booking_seat 조회해서 좌석 상태 정해주기)
+5. 가격 조회
+
+**B는 상태 변경 중심**
+B가 맡는 테이블
+`member`
+`non_member`
+`hold_seat`
+`booking`
+`booking_seat`
+`payment`
+
+B가 구현해야 할 기능 (API)
+1. 회원 등록/조회
+2. 좌석 홀드 (중복 방지/만료 시간 관리)
+3. 예매 생성 (booking + booking_seat)
+4. 결제
+5. 내 예매 내역 조회
+-----------------------------------------------------------------------
+팀원 A API 목록
+
+GET /movies
+GET /movies/{id}/versions
+GET /showtimes?movieId=
+GET /showtimes/{id}
+GET /screens/{id}/seats
+GET /theaters
+GET /theaters/{id}
+GET /price?showId=&seatTypeId=
+
+팀원 B API 목록
+
+POST /members
+POST /hold-seat
+DELETE /hold-seat/{id}
+POST /booking
+POST /payment
+GET /booking/{id}
+GET /members/{id}/bookings
