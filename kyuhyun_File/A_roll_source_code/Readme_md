@@ -1,0 +1,29 @@
+Dao -> service -> main 순으로 호출되게 하였습니다.
+
+1. 영화 조회
+- 전체 영화 목록
+- 특정영화를 movieId로 조회
+- 배급사 join 포함
+
+2. 영화관 조회
+- 전체 영화관 조회
+- theaterId기반 특정 영화관 조회
+
+3. 상영관 조회
+- 특정 영화관의 상영관 목록 조회
+- layout_id는 Seat조회 시에 자동적으로 참조하게 해놨고, ScreenLayout테이블과 별도적으로 구성
+
+4. 상영정보 조회
+- 특정 영화를 movieId 기바의 상영정보 목록 조회 
+- showId 기반으로 특정 상영 조회
+- movie_version과 조인해 실제 movie_id와 매핑되게 구성함.
+
+5. 좌석 조회
+- show_id만 전달하면 내부에서 screen - screen_layout - layout_id를 자동으로 추적하며, seat테이블과 자동적으로 join하고, booking_seat / hold_seat로 상태 계산
+
+- 좌석 상태는 BOOKED, HOLD, AVAILABLE
+
+6. 가격 조회
+- showtime을 기반으로 가격 정책을 조회
+- seat_type_id를 기반으로 가격을 계산함.
+
