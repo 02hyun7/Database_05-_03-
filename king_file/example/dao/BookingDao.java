@@ -7,7 +7,7 @@ import java.sql.*;
 
 public class BookingDao {
 
-    public Booking createBooking(Booking booking) throws SQLException {
+    public Booking create(Booking booking) throws SQLException {
         String sql = "INSERT INTO booking (member_id, show_id, status, total_amount, created_at, updated_at) " +
                 "VALUES (?, ?, ?, ?, NOW(), NOW())";
 
@@ -17,7 +17,7 @@ public class BookingDao {
             pstmt.setLong(1, booking.getMemberId());
             pstmt.setLong(2, booking.getShowId());
             pstmt.setString(3, booking.getStatus());
-            pstmt.setInt(4, booking.getTotalAmount());
+            pstmt.setBigDecimal(4, booking.getTotalAmount());
 
             pstmt.executeUpdate();
 

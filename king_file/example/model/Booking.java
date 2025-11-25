@@ -1,5 +1,6 @@
 package org.example.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class Booking {
@@ -8,14 +9,14 @@ public class Booking {
     private Long memberId;
     private Long showId;
     private String status;
-    private int totalAmount;
+    private BigDecimal totalAmount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public Booking() {}
 
     public Booking(Long bookingId, Long memberId, Long showId, String status,
-                   int totalAmount, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                   BigDecimal totalAmount, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.bookingId = bookingId;
         this.memberId = memberId;
         this.showId = showId;
@@ -25,7 +26,7 @@ public class Booking {
         this.updatedAt = updatedAt;
     }
 
-    public Booking(Long memberId, Long showId, int totalAmount) {
+    public Booking(Long memberId, Long showId, BigDecimal totalAmount) {
         this.memberId = memberId;
         this.showId = showId;
         this.totalAmount = totalAmount;
@@ -64,11 +65,11 @@ public class Booking {
         this.status = status;
     }
 
-    public int getTotalAmount() {
+    public BigDecimal getTotalAmount() {
         return totalAmount;
     }
 
-    public void setTotalAmount(int totalAmount) {
+    public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
     }
 
