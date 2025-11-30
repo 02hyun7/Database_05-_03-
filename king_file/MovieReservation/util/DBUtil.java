@@ -1,7 +1,7 @@
 package org.example.util;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.DriverManager; // 연결 방식
 import java.sql.SQLException;
 
 public class DBUtil {
@@ -12,6 +12,6 @@ public class DBUtil {
     private static final String PASSWORD = System.getenv("DB_PASSWORD");
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USERNAME, PASSWORD);
+        return DriverManager.getConnection(URL, USERNAME, PASSWORD); // SQLException은 서비스 계층에서 처리
     }
 }
